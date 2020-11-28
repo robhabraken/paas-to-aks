@@ -1,0 +1,217 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "deploymentId": {
+      "type": "string",
+      "metadata": {
+        "Description": "This is the Resource Prefix"
+      }
+    },
+    "vmbasename": {
+      "type": "string",
+      "defaultValue": "-solr"
+    },
+    "VMsize": {
+      "type": "string",
+      "defaultValue": "Standard_D4s_v4"
+    },
+    "adminUsername": {
+      "type": "securestring"
+    },
+    "adminPassword": {
+      "type": "securestring"
+    },
+    "sizeOfDataDiskInGB": {
+      "type": "int",
+      "minValue": 1,
+      "maxValue": 1023,
+      "defaultValue": 128
+    },
+    "centOsVersion": {
+      "type": "string",
+      "defaultValue": "8.0"
+    },
+    "solrVersion": {
+      "type": "string",
+      "defaultValue": "8.4.0"
+    },
+    "baseUrl": {
+      "type": "string"
+    },
+    "sasToken": {
+      "type": "string"
+    },
+    "vnetRG": {
+      "type": "string"
+    },
+    "vnetName": {
+      "type": "string"
+    },
+    "subnetName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "primaryNodeScript": "[concat(parameters('baseUrl'), 'scripts/installSolr.sh', parameters('sasToken'))]",
+    "apiVersion": "2015-06-15",
+    "securityGroupName": "[concat(parameters('deploymentId'), '-solr', '-nsg')]",
+    "primaryOsSettings": {
+      "imageReference": {
+        "publisher": "OpenLogic",
+        "offer": "CentOS",
+        "sku": "[parameters('centOsVersion')]",
+        "version": "latest"
+      },
+      "scripts": [
+        "[variables('primaryNodeScript')]"
+      ]
+    },
+    "VnetID": "[resourceId(parameters('vnetRG'), 'Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+    "subnetRef": "[concat(variables('VnetID'), '/subnets/', parameters('subnetName'))]",
+    "dnsname": "[concat(parameters('deploymentId'), parameters('vmbasename'))]"
+  },
+  "resources": [
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('securityGroupName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "alldb",
+            "properties": {
+              "description": "Allows all traffic from DB",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "193.148.22.2/32",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('apiVersion')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat(variables('dnsname'), '-pubip')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "IdleTimeoutinMinutes": 30,
+        "dnsSettings": {
+          "domainNameLabel": "[concat(variables('dnsname'))]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2019-04-01",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('dnsname'), '-nic')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('dnsname'), '-pubip'))]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('securityGroupName'))]"
+        }
+      },
+
+      "resources": [],
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('dnsname'), '-pubip')]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('securityGroupName'))]"
+      ]
+    },
+    {
+      "apiVersion": "2019-12-01",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('dnsname'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', concat(variables('dnsname'), '-nic'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('dnsname')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": "[variables('primaryOsSettings').imageReference]",
+          "dataDisks": [
+            {
+              "name": "[concat(variables('dnsname'), '-datadisk')]",
+              "diskSizeGB": "[parameters('sizeOfDataDiskInGB')]",
+              "lun": 0,
+              "createOption": "Empty",
+              "caching": "ReadWrite"
+            }
+          ],
+          "osDisk": {
+            "name": "[concat(variables('dnsname'), '-osdisk')]",
+            "createOption": "FromImage",
+            "DiskSizeGB": 32,
+            "caching": "ReadWrite"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('dnsname'), '-nic'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('dnsname'), '/ServerInstall', parameters('vmbasename'))]",
+      "apiVersion": "[variables('apiVersion')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('dnsname'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": "[variables('primaryOsSettings').scripts]"
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat('bash installSolr.sh ', parameters('solrVersion'), ' ', parameters('adminPassword'))]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+
+    "ServerName": {
+      "type": "string",
+      "value": "[variables('dnsname')]"
+    }
+  }
+}
+

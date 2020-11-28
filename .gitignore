@@ -1,0 +1,7 @@
+# exclude Sitecore Container Deployment source files from repository
+/sitecore/k8s/*
+!/sitecore/k8s/README.md
+
+# exclude license files and certificates from repository
+/resources/*
+!/resources/README.md

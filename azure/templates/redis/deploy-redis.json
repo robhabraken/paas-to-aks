@@ -1,0 +1,48 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]"
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "redisCacheName": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "[concat(parameters('deploymentId'), '-redis')]"
+    },
+    "redisCache": {
+      "type": "object",
+      "defaultValue": {
+        "SkuName": "Standard",
+        "SkuFamily": "C",
+        "SkuCapacity": 1
+      }
+    }
+  },
+  "variables": {
+    "redisApiVersion": "2016-04-01",
+    "redisCacheNameTidy": "[toLower(trim(parameters('redisCacheName')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Cache/Redis",
+      "name": "[variables('redisCacheNameTidy')]",
+      "apiVersion": "[variables('redisApiVersion')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "[parameters('redisCache').SkuName]",
+          "family": "[parameters('redisCache').SkuFamily]",
+          "capacity": "[parameters('redisCache').SkuCapacity]"
+        },
+        "enableNonSslPort": false
+      }
+    }
+  ]
+}

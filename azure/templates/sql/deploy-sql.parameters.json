@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "sqlServerLogin": {
+      "reference": {
+        "keyVault": {
+          "id": ""
+        },
+        "secretName": "sitecore-databaseusername"
+      }
+    },
+    "sqlServerPassword": {
+      "reference": {
+        "keyVault": {
+          "id": ""
+        },
+        "secretName": "sitecore-databasepassword"
+      }
+    },
+    "edition": {
+      "value": "Standard"
+    },
+    "capacity": {
+      "value": 100
+    },
+    "databaseCapacityMin": {
+      "value": 0
+    },
+    "databaseCapacityMax": {
+      "value": 100
+    }
+  }
+}

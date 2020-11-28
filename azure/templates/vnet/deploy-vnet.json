@@ -1,0 +1,75 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "deploymentId": {
+      "type": "string",
+      "defaultValue": "paas-to-aks"
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16"
+    },
+    "subnetGatewayAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/24"
+    },
+    "subnetSolrAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.3.0/24"
+    }
+  },
+    "variables": {
+      "virtualNetworksName": "[concat(parameters('deploymentId'), '-vnet')]",
+      "vnetApiVersion": "2019-09-01"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Network/virtualNetworks",
+        "apiVersion": "[variables('vnetApiVersion')]",
+        "name": "[variables('virtualNetworksName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "addressSpace": {
+            "addressPrefixes": [
+              "[parameters('vnetAddressPrefix')]"
+            ]
+          },
+          "subnets": [
+            {
+              "name": "GatewaySubnet",
+              "properties": {
+                "addressPrefix": "[parameters('subnetGatewayAddressPrefix')]",
+                "serviceEndpoints": [],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              }
+            },
+            {
+              "name": "solr-subnet",
+              "properties": {
+                "addressPrefix": "[parameters('subnetSolrAddressPrefix')]",
+                "serviceEndpoints": [
+                  {
+                    "service": "Microsoft.Web",
+                    "locations": [
+                      "*"
+                    ]
+                  }
+                ],
+                "delegations": [
+                ],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+              }
+            }
+          ],
+          "virtualNetworkPeerings": [],
+          "enableDdosProtection": false,
+          "enableVmProtection": false
+        }
+      }
+    ],
+    "outputs": {}
+  }

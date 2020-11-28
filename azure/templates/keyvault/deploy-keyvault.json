@@ -1,0 +1,193 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "deploymentId": {
+      "type": "string"
+    },
+    "managedIdentityPrincipalId": {
+      "type": "string"
+    },
+    "servicePrincipalId": {
+      "type": "string"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "keyvault"
+    }
+  },
+    "variables": {
+      "keyVaultApiVersion": "2016-10-01",
+      "keyVaultName": "[concat(parameters('deploymentId'), '-', parameters('keyVaultName'))]"
+    },
+    "resources": [
+      {
+        "type": "Microsoft.KeyVault/vaults",
+        "apiVersion": "[variables('keyVaultApiVersion')]",
+        "name": "[variables('keyVaultName')]",
+        "location": "[resourceGroup().location]",
+        "properties": {
+          "sku": {
+            "family": "A",
+            "name": "Standard"
+          },
+          "tenantId": "[subscription().tenantId]",
+          "accessPolicies": [
+            {
+              "tenantId": "[subscription().tenantId]",
+              "objectId": "[parameters('managedIdentityPrincipalId')]",
+              "permissions": {
+                "keys": [
+                  "Get",
+                  "List",
+                  "Update",
+                  "Create",
+                  "Import",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore"
+                ],
+                "secrets": [
+                  "Get",
+                  "List",
+                  "Set",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore"
+                ],
+                "certificates": [
+                  "Get",
+                  "List",
+                  "Update",
+                  "Create",
+                  "Import",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore",
+                  "ManageContacts",
+                  "ManageIssuers",
+                  "GetIssuers",
+                  "ListIssuers",
+                  "SetIssuers",
+                  "DeleteIssuers"
+                ]
+              }
+            },
+            {
+              "tenantId": "[subscription().tenantId]",
+              "objectId": "[parameters('ServicePrincipalId')]",
+              "permissions": {
+                "keys": [
+                  "Get",
+                  "List",
+                  "Update",
+                  "Create",
+                  "Import",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore"
+                ],
+                "secrets": [
+                  "Get",
+                  "List",
+                  "Set",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore"
+                ],
+                "certificates": [
+                  "Get",
+                  "List",
+                  "Update",
+                  "Create",
+                  "Import",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore",
+                  "ManageContacts",
+                  "ManageIssuers",
+                  "GetIssuers",
+                  "ListIssuers",
+                  "SetIssuers",
+                  "DeleteIssuers"
+                ]
+              }
+            },
+            {
+              "tenantId": "[subscription().tenantId]",
+              "objectId": "3f88c163-06b1-41b2-9c3c-6ca03f619ab8",
+              "permissions": {
+                "keys": [
+                  "Get",
+                  "List",
+                  "Update",
+                  "Create",
+                  "Import",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore"
+                ],
+                "secrets": [
+                  "Get",
+                  "List",
+                  "Set",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore"
+                ],
+                "certificates": [
+                  "Get",
+                  "List",
+                  "Update",
+                  "Create",
+                  "Import",
+                  "Delete",
+                  "Recover",
+                  "Backup",
+                  "Restore",
+                  "ManageContacts",
+                  "ManageIssuers",
+                  "GetIssuers",
+                  "ListIssuers",
+                  "SetIssuers",
+                  "DeleteIssuers"
+                ]
+              }
+            },
+            {
+              "tenantId": "[subscription().tenantId]",
+              "objectId": "1a330cfc-16ce-4b78-b4cb-a9c0fc0f0352",
+              "permissions": {
+                "secrets": [
+                  "get",
+                  "set",
+                  "delete"
+                ]
+              }
+            },
+            {
+              "tenantId": "[subscription().tenantId]",
+              "objectId": "1485593a-6c2f-4a20-88ec-186310e1e786",
+              "permissions": {
+                "secrets": [
+                  "get"
+                ]
+              }
+            }
+          ],
+          "enabledForDeployment": true,
+          "enabledForDiskEncryption": false,
+          "enabledForTemplateDeployment": true,
+          "enableSoftDelete": true
+        }
+      }
+    ]
+  }

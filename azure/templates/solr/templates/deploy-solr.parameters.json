@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "VmSize": {
+      "value": "Standard_D2s_v4"
+    },
+    "solrVersion": {
+      "value": "8.4.0"
+    },
+    "vnetRG": {
+      "value": ""
+    },
+    "vnetName": {
+      "value": ""
+    },
+    "subnetName": {
+      "value": ""
+    },
+    "adminUsername": {
+      "reference": {
+        "keyVault": {
+          "id": ""
+        },
+        "secretName": "sitecore-solr-admin-username"
+      }
+    },
+    "adminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": ""
+        },
+        "secretName": "sitecore-solr-admin-password"
+      }
+    }
+  }
+}
