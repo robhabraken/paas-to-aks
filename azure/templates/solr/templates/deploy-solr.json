@@ -69,7 +69,8 @@
     },
     "VnetID": "[resourceId(parameters('vnetRG'), 'Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
     "subnetRef": "[concat(variables('VnetID'), '/subnets/', parameters('subnetName'))]",
-    "dnsname": "[concat(parameters('deploymentId'), parameters('vmbasename'))]"
+    "dnsname": "[concat(parameters('deploymentId'), parameters('vmbasename'))]",
+    "dnsNameFqdn": "[concat(variables('dnsname'), '.', resourceGroup().location, '.cloudapp.azure.com')]"
   },
   "resources": [
     {
@@ -201,16 +202,19 @@
           "fileUris": "[variables('primaryOsSettings').scripts]"
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('bash installSolr.sh ', parameters('solrVersion'), ' ', parameters('adminPassword'))]"
+          "commandToExecute": "[concat('bash installSolr.sh ', parameters('solrVersion'), ' ', parameters('adminPassword'), ' ', variables('dnsNameFqdn'))]"
         }
       }
     }
   ],
   "outputs": {
-
     "ServerName": {
       "type": "string",
       "value": "[variables('dnsname')]"
+    },
+    "FQDN": {
+      "type": "string",
+      "value": "[variables('dnsNameFQDN')]"
     }
   }
 }

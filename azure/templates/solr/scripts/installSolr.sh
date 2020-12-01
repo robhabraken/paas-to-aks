@@ -2,6 +2,7 @@
 
 solrVersion=$1
 solrPassword=$2
+dnsNameFQDN=$3
 
 {
 if [ -f /var/log/solrInstall.log ]; then
@@ -197,6 +198,8 @@ cat <<EOT >> /etc/default/solr.in.sh
 ZK_HOST=$HOSTNAME:2181
 # comma rest of the hosts ,<host name 2>:2181,<host name 3>:2181
 SOLR_LOG_LEVEL=WARN
+# set external FQDN as SOLR Host
+SOLR_HOST=$dnsNameFQDN
 EOT
 
 # Set SOLR HOME
