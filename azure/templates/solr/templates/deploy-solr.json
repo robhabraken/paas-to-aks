@@ -69,8 +69,8 @@
     },
     "VnetID": "[resourceId(parameters('vnetRG'), 'Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
     "subnetRef": "[concat(variables('VnetID'), '/subnets/', parameters('subnetName'))]",
-    "dnsname": "[concat(parameters('deploymentId'), parameters('vmbasename'))]",
-    "dnsNameFqdn": "[concat(variables('dnsname'), '.', resourceGroup().location, '.cloudapp.azure.com')]"
+    "dnsName": "[concat(parameters('deploymentId'), parameters('vmbasename'))]",
+    "dnsNameFqdn": "[concat(variables('dnsName'), '.', resourceGroup().location, '.cloudapp.azure.com')]"
   },
   "resources": [
     {
@@ -100,20 +100,20 @@
     {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[concat(variables('dnsname'), '-pubip')]",
+      "name": "[concat(variables('dnsName'), '-pubip')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "publicIPAllocationMethod": "Static",
         "IdleTimeoutinMinutes": 30,
         "dnsSettings": {
-          "domainNameLabel": "[concat(variables('dnsname'))]"
+          "domainNameLabel": "[concat(variables('dnsName'))]"
         }
       }
     },
     {
       "apiVersion": "2019-04-01",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('dnsname'), '-nic')]",
+      "name": "[concat(variables('dnsName'), '-nic')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "ipConfigurations": [
@@ -121,7 +121,7 @@
             "name": "ipconfig1",
             "properties": {
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('dnsname'), '-pubip'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('dnsName'), '-pubip'))]"
               },
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
@@ -137,24 +137,24 @@
 
       "resources": [],
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('dnsname'), '-pubip')]",
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('dnsName'), '-pubip')]",
         "[concat('Microsoft.Network/networkSecurityGroups/', variables('securityGroupName'))]"
       ]
     },
     {
       "apiVersion": "2019-12-01",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(variables('dnsname'))]",
+      "name": "[concat(variables('dnsName'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', concat(variables('dnsname'), '-nic'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', concat(variables('dnsName'), '-nic'))]"
       ],
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[variables('dnsname')]",
+          "computerName": "[variables('dnsName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -162,7 +162,7 @@
           "imageReference": "[variables('primaryOsSettings').imageReference]",
           "dataDisks": [
             {
-              "name": "[concat(variables('dnsname'), '-datadisk')]",
+              "name": "[concat(variables('dnsName'), '-datadisk')]",
               "diskSizeGB": "[parameters('sizeOfDataDiskInGB')]",
               "lun": 0,
               "createOption": "Empty",
@@ -170,7 +170,7 @@
             }
           ],
           "osDisk": {
-            "name": "[concat(variables('dnsname'), '-osdisk')]",
+            "name": "[concat(variables('dnsName'), '-osdisk')]",
             "createOption": "FromImage",
             "DiskSizeGB": 32,
             "caching": "ReadWrite"
@@ -179,7 +179,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('dnsname'), '-nic'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('dnsName'), '-nic'))]"
             }
           ]
         }
@@ -187,11 +187,11 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('dnsname'), '/ServerInstall', parameters('vmbasename'))]",
+      "name": "[concat(variables('dnsName'), '/ServerInstall', parameters('vmbasename'))]",
       "apiVersion": "[variables('apiVersion')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('dnsname'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('dnsName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
@@ -210,7 +210,7 @@
   "outputs": {
     "ServerName": {
       "type": "string",
-      "value": "[variables('dnsname')]"
+      "value": "[variables('dnsName')]"
     },
     "FQDN": {
       "type": "string",
