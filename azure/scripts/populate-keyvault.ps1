@@ -176,6 +176,31 @@ Function Construct-KeyVaultReference {
 	}	
 }
 
+# adds the required keyvault entries for Solr, using an auto-generated secret value as password
+Function Add-SolrCredentials {
+	
+	[CmdletBinding()]
+	Param (
+	)
+
+	Begin {
+	}
+
+	Process {
+
+        Write-Host 'Add Solr credential secrets to key vault...'
+
+        # generate random secret value
+        $solrAdminPassword = Get-RandomAlphanumericString -length $DefaultSecretLength
+
+        # generate key vault secret
+        az keyvault secret set --name 'sitecore-solr-admin-username' --vault-name $VaultName --value 'solrAdmin'
+        az keyvault secret set --name 'sitecore-solr-admin-password' --vault-name $VaultName --value $solrAdminPassword
+
+        Write-Host
+	}	
+}
+
 
 # read kustomization yaml file from file system into memory
 $kustomization = Read-File -filename $SecretsFolder'kustomization.yaml'
@@ -207,3 +232,6 @@ foreach ($hashTable in $secretDefinitions) {
         }
     }
 }
+
+# automatically add the required Key Vault secrets for the Solr Cloud instance
+Add-SolrCredentials
