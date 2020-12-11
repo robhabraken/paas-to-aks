@@ -10,10 +10,6 @@ param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [string] $AksName,
-    
-    [Parameter(Mandatory = $true)]
-    [ValidateNotNullOrEmpty()]
-    [string] $AcrName,
 
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
@@ -39,15 +35,6 @@ az aks create --resource-group $ResourceGroup `
     --nodepool-name 'linux'
 
 Write-Host "--- Complete: AKS Created ---" -ForegroundColor Green
-
-# link AKS to ACR
-Write-Host "--- Linking AKS to ACR ---" -ForegroundColor Cyan
-
-$clientID = $(az aks show --resource-group $ResourceGroup --name $AksName --query "servicePrincipalProfile.clientId" --output tsv)
-$acrId = $(az acr show --name $AcrName --resource-group $ResourceGroup --query "id" --output tsv)
-az role assignment create --assignee $clientID --role acrpull --scope $acrId
-
-Write-Host "--- Complete: AKS & ACR Linked ---" -ForegroundColor Green
 
 # add windows server nodepool
 Write-Host "--- Creating Windows Server Node Pool ---" -ForegroundColor Cyan
