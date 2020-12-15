@@ -1,6 +1,6 @@
 # PaaS to AKS
 
-Boilerplate project for deploying Sitecore 10.0 to Azure Kubernetes Service (AKS) coming from an Azure PaaS architecture for Sitecore. 
+Boilerplate project for deploying Sitecore 10.0 or 10.0 Update-1 to Azure Kubernetes Service (AKS) coming from an Azure PaaS architecture for Sitecore. 
 
 Among other things, this boilerplate contains:
 * Updated and tested scripts to support a full Infrastructure-as-Code setup for Sitecore on AKS
