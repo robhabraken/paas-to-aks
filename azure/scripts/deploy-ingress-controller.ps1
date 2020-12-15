@@ -1,4 +1,22 @@
-﻿Write-Host "--- Creating nginx (Ingress) ---" -ForegroundColor Cyan
+﻿param (
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string] $ResourceGroup,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string] $AksName
+)
+
+# authenticate AKS instance
+Write-Host "--- Get credentials for k8s cluster ---" -ForegroundColor Cyan
+
+az aks get-credentials --admin `
+    --resource-group $ResourceGroup `
+    --name $AksName `
+    --overwrite-existing
+
+Write-Host "--- Creating nginx (Ingress) ---" -ForegroundColor Cyan
 
 # add nginx helm charts
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
