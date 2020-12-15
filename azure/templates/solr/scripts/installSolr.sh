@@ -18,6 +18,9 @@ exec 1>/var/log/solrInstall.log 2>&1
 
 sed -i "s/SELINUX=enforcing/SELINUX=disabled/" /etc/selinux/config
 
+# Add FQDN to hosts file to allow resolving requests from Solr
+echo "127.0.0.1 $dnsNameFQDN" >> /etc/hosts
+
 # Create Disk
 if lsblk | grep -q 'sdc'; then
     echo "Use additional disk to store files"
@@ -110,14 +113,14 @@ mkdir -p /opt/zookeeper/data
 mkdir -p /opt/zookeeper/logs
 
 # Change the ID number for other hosts
-echo "1" >/opt/zookeeper/data/myid
+echo "1" > /opt/zookeeper/data/myid
 
 cat <<EOT >> /opt/zookeeper/conf/zookeeper-env.sh
 
 ZOO_LOG_DIR=/opt/zookeeper/logs
 ZOO_LOG4J_PROP="INFO,ROLLINGFILE"
 
-SERVER_JVMFLAGS="-Xms2048m -Xmx2048m -verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime -Xloggc:$ZOO_LOG_DIR/zookeeper_gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=50M"
+SERVER_JVMFLAGS="-Xms2048m -Xmx2048m -verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintTenuringDistribution -XX:+PrintGCApplicationStoppedTime -Xloggc:\$ZOO_LOG_DIR/zookeeper_gc.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=9 -XX:GCLogFileSize=50M"
 EOT
 
 chown -R solr:solr /opt/zookeeper
@@ -159,16 +162,16 @@ fi
 echo "solrVersion is $solrVersion"
 
 
-sudo echo 'solr soft nofile 65000' >> /etc/security/limits.conf
-sudo echo 'solr hard nofile 65000' >> /etc/security/limits.conf
-sudo echo 'root soft nofile 65000' >> /etc/security/limits.conf
-sudo echo 'root hard nofile 65000' >> /etc/security/limits.conf
-sudo echo 'solr soft nproc  65000' >> /etc/security/limits.conf
-sudo echo 'solr hard nproc  65000' >> /etc/security/limits.conf
-sudo echo 'root soft nproc  65000' >> /etc/security/limits.conf
-sudo echo 'root hard nproc  65000' >> /etc/security/limits.conf
+echo 'solr soft nofile 65000' >> /etc/security/limits.conf
+echo 'solr hard nofile 65000' >> /etc/security/limits.conf
+echo 'root soft nofile 65000' >> /etc/security/limits.conf
+echo 'root hard nofile 65000' >> /etc/security/limits.conf
+echo 'solr soft nproc  65000' >> /etc/security/limits.conf
+echo 'solr hard nproc  65000' >> /etc/security/limits.conf
+echo 'root soft nproc  65000' >> /etc/security/limits.conf
+echo 'root hard nproc  65000' >> /etc/security/limits.conf
 
-sudo echo 'solr soft nproc 65000' >> /etc/security/limits.d/20-nproc.conf
+echo 'solr soft nproc 65000' >> /etc/security/limits.d/20-nproc.conf
 
 mkdir -p /opt/dist/
 mkdir -p /opt/solr/
