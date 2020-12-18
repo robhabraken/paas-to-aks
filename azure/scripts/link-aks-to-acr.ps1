@@ -1,7 +1,7 @@
 param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ResourceGroup,
+    [string] $ResourceGroupName,
     
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
@@ -15,8 +15,8 @@ param (
 # link AKS to ACR
 Write-Host "--- Linking AKS to ACR ---" -ForegroundColor Cyan
 
-$clientID = $(az aks show --resource-group $ResourceGroup --name $AksName --query "servicePrincipalProfile.clientId" --output tsv)
-$acrId = $(az acr show --name $AcrName --resource-group $ResourceGroup --query "id" --output tsv)
+$clientID = $(az aks show --resource-group $ResourceGroupName --name $AksName --query "servicePrincipalProfile.clientId" --output tsv)
+$acrId = $(az acr show --name $AcrName --resource-group $ResourceGroupName --query "id" --output tsv)
 az role assignment create --assignee $clientID --role acrpull --scope $acrId
 
 Write-Host "--- Complete: AKS & ACR Linked ---" -ForegroundColor Green

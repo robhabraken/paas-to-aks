@@ -5,7 +5,7 @@ param (
     
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ResourceGroup,
+    [string] $ResourceGroupName,
     
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
@@ -21,7 +21,7 @@ $aksVersion = "1.19.3"
 # create AKS instance
 Write-Host "--- Creating AKS Instance K8s version $aksVersion ---" -ForegroundColor Cyan
 
-az aks create --resource-group $ResourceGroup `
+az aks create --resource-group $ResourceGroupName `
     --name $AksName `
     --kubernetes-version $aksVersion `
     --location $Region `
@@ -39,7 +39,7 @@ Write-Host "--- Complete: AKS Created ---" -ForegroundColor Green
 # add windows server nodepool
 Write-Host "--- Creating Windows Server Node Pool ---" -ForegroundColor Cyan
 
-az aks nodepool add --resource-group $ResourceGroup `
+az aks nodepool add --resource-group $ResourceGroupName `
     --cluster-name $AksName `
     --os-type Windows `
     --name 'win' `
@@ -52,7 +52,7 @@ Write-Host "--- Complete: Windows Server Node Pool Created ---" -ForegroundColor
 Write-Host "--- Get credentials for k8s cluster ---" -ForegroundColor Cyan
 
 az aks get-credentials --admin `
-    --resource-group $ResourceGroup `
+    --resource-group $ResourceGroupName `
     --name $AksName `
     --overwrite-existing
 

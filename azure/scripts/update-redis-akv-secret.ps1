@@ -9,7 +9,7 @@
         This script retrieves the primary key from the Redis cache to form a connection string
         and updates the corresponding KeyVault secret with the correct value.
 
-    .PARAMETER ResourceGroup
+    .PARAMETER ResourceGroupName
         Name of the Resource Group that contains the Redis cache.
 
     .PARAMETER RedisCacheName
@@ -25,7 +25,7 @@ Param (
     # Name of the Resource Group that contains the Redis cache
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ResourceGroup,
+    [string] $ResourceGroupName,
     
     # Name of the Redis cache resource (optional)
     [ValidateNotNullOrEmpty()]
@@ -46,7 +46,7 @@ if ($RedisCacheName -eq '') {
 }
 
 # retrieve primary key from Redis cache instance
-$PrimaryKey = az redis list-keys --name $ResourceGroup"-redis" --resource-group $ResourceGroup --query primaryKey --output tsv
+$PrimaryKey = az redis list-keys --name $RedisCacheName --resource-group $ResourceGroupName --query primaryKey --output tsv
 
 # build up Redis connection string based on name and (primary) key
 $RedisConnectionString = "$RedisCacheName.redis.cache.windows.net:6380,password=$PrimaryKey,ssl=True,abortConnect=False"

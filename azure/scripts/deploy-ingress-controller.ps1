@@ -1,7 +1,7 @@
 ﻿param (
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string] $ResourceGroup,
+    [string] $ResourceGroupName,
 
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
@@ -12,7 +12,7 @@
 Write-Host "--- Get credentials for k8s cluster ---" -ForegroundColor Cyan
 
 az aks get-credentials --admin `
-    --resource-group $ResourceGroup `
+    --resource-group $ResourceGroupName `
     --name $AksName `
     --overwrite-existing
 
