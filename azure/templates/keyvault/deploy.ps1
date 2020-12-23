@@ -19,7 +19,9 @@ param (
     [Parameter()]
     [string] $keyVaultName
 )  
-  
+
+Install-Module -Name Az.ManagedServiceIdentity -Force
+
 # check if resource group already exists, create one if not
 Write-Host "Check if resource group already exists..."
 $notPresent = Get-AzResourceGroup -Name $resourceGroupName -ev notPresent -ea 0;
