@@ -64,8 +64,8 @@ Param (
 )
 
 # install module to be able to parse yaml files
-Install-Module powershell-yaml
-Import-Module powershell-yaml
+Install-Module powershell-yaml -Force
+Import-Module powershell-yaml -Force
 
 # reads the contents of a file and returns them in a line separated string value
 Function Read-File {
