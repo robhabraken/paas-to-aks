@@ -20,6 +20,7 @@ param (
     [string] $keyVaultName
 )  
 
+# install required modules
 Install-Module -Name Az.ManagedServiceIdentity -Force
 
 # check if resource group already exists, create one if not
