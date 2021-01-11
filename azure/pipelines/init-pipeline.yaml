@@ -1,0 +1,246 @@
+name: $(Date:dd.MM.yyyy)$(rev:.r)
+trigger: none
+pr: none
+
+variables:
+- group: 'paas-to-aks'
+
+stages:
+  - stage: InitDeploy
+    dependsOn: []
+    jobs:
+    - job: Build
+      displayName: ☁ Azure & K8s artifacts
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+        - task: PublishPipelineArtifact@1
+          displayName: 🚢 Publish Azure Artifact
+          inputs:
+            targetPath: '$(System.DefaultWorkingDirectory)/azure'
+            artifactName: Azure
+        - task: PublishPipelineArtifact@1
+          displayName: 🚢 Publish Kubernetes Artifact
+          inputs:
+            targetPath: '$(System.DefaultWorkingDirectory)/sitecore/k8s'
+            artifactName: Kubernetes
+
+    - deployment: DeployEDS
+      displayName: Deploy external data services
+      dependsOn: Build
+      pool:
+        vmImage: windows-latest
+      environment: $(deploymentId)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Azure
+            - task: AzureResourceManagerTemplateDeployment@3
+              displayName: 'Deploy VNET'
+              inputs:
+                azureResourceManagerConnection: '$(azureServiceConnection)'
+                subscriptionId: '$(azureSubscriptionId)'
+                resourceGroupName: '$(resourceGroupName)'
+                location: '$(location)'
+                csmFile: '$(Pipeline.Workspace)/Azure/templates/vnet/deploy-vnet.json'
+                overrideParameters: '-deploymentId "$(deploymentId)"'
+                deploymentName: VNET
+
+            - task: AzureResourceManagerTemplateDeployment@3
+              displayName: 'Deploy Container Registry'
+              inputs:
+                azureResourceManagerConnection: '$(azureServiceConnection)'
+                subscriptionId: '$(azureSubscriptionId)'
+                resourceGroupName: '$(resourceGroupName)'
+                location: '$(location)'
+                csmFile: '$(Pipeline.Workspace)/Azure/templates/acr/deploy-acr.json'
+                overrideParameters: '-deploymentId "$(deploymentId)"'
+                deploymentName: ContainerRegistry
+
+            - task: AzureResourceManagerTemplateDeployment@3
+              displayName: 'Deploy SQL'
+              inputs:
+                azureResourceManagerConnection: '$(azureServiceConnection)'
+                subscriptionId: '$(azureSubscriptionId)'
+                resourceGroupName: '$(resourceGroupName)'
+                location: '$(location)'
+                csmFile: '$(Pipeline.Workspace)/Azure/templates/sql/deploy-sql.json'
+                csmParametersFile: '$(Pipeline.Workspace)/Azure/templates/sql/deploy-sql.parameters-temp.json'
+                overrideParameters: '-deploymentId "$(deploymentId)"'
+                deploymentName: SQL
+
+            - task: AzureResourceManagerTemplateDeployment@3
+              displayName: 'Deploy Redis'
+              inputs:
+                azureResourceManagerConnection: '$(azureServiceConnection)'
+                subscriptionId: '$(azureSubscriptionId)'
+                resourceGroupName: '$(resourceGroupName)'
+                location: '$(location)'
+                csmFile: '$(Pipeline.Workspace)/Azure/templates/redis/deploy-redis.json'
+                overrideParameters: '-deploymentId "$(deploymentId)"'
+                deploymentName: Redis 
+
+            - task: AzurePowerShell@5
+              displayName: 'Deploy SOLR'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                ScriptPath: '$(Pipeline.Workspace)/Azure/templates/solr/deploy.ps1'
+                ScriptArguments: '-deploymentId "$(deploymentId)" -resourceGroupName "$(resourceGroupName)" -location "$(location)" -templateFile "$(solrDeployTemplate)" -templateParameterFile "$(solrDeployTemplateParameters)"'
+                azurePowerShellVersion: LatestVersion
+
+            - task: AzurePowerShell@5
+              displayName: 'Allow AKS access to EDS'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                ScriptPath: '$(Pipeline.Workspace)/Azure/scripts/allow-aks-access-to-eds.ps1'
+                ScriptArguments: '-resourceGroupName "$(resourceGroupName)"'
+                azurePowerShellVersion: LatestVersion
+
+            - task: AzurePowerShell@5
+              displayName: 'Update Redis connection string in KeyVault'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                ScriptPath: '$(Pipeline.Workspace)/Azure/scripts/update-redis-akv-secret.ps1'
+                ScriptArguments: '-resourceGroupName "$(resourceGroupName)" -redisCacheName "$(redisCacheName)" -vaultName "$(keyvaultName)"'
+                azurePowerShellVersion: LatestVersion                
+
+
+    - deployment: DeploySecrets
+      dependsOn: DeployEDS
+      displayName: Deploy Secrets
+      pool:
+        vmImage: windows-latest
+      environment: $(deploymentId)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Kubernetes              
+
+            - task: AzureKeyVault@1
+              displayName: 'Azure Key Vault: $(keyvaultName)'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                KeyVaultName: $(keyvaultName)
+
+            - task: replacetokens@3
+              displayName: 'Replace Tokens in Secrets'
+              inputs:
+                rootDirectory: '$(Pipeline.Workspace)/Kubernetes/$(topology)'
+                targetFiles: |
+                 **/*.txt
+                 **/*.crt
+                 **/*.key
+                keepToken: true
+                tokenPrefix: '$('
+                tokenSuffix: ')'
+
+            - task: Kubernetes@1
+              displayName: 'Deploy Secrets'
+              inputs:
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                command: apply
+                arguments: '-k $(Pipeline.Workspace)/Kubernetes/$(topology)/secrets/'
+                outputFormat: none
+
+    - deployment: DeployIngressController
+      dependsOn: DeploySecrets
+      displayName: Deploy Ingress Controller
+      pool:
+        vmImage: windows-latest
+      environment: $(deploymentId)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Azure              
+
+            - task: AzureCLI@2
+              displayName: 'Deploy Ingress Controller'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: 'ps'
+                scriptLocation: 'scriptPath'
+                scriptPath: '$(Pipeline.Workspace)/Azure/scripts/deploy-ingress-controller.ps1'
+                arguments: '-resourceGroupName "$(resourceGroupName)" -aksName "$(aksName)"'
+                  
+    - deployment: InitJobs
+      dependsOn: DeployIngressController
+      displayName: Run Initialization Jobs SOLR and MSSQL
+      pool:
+        vmImage: windows-latest
+      environment: $(deploymentId)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Kubernetes
+
+            - task: KubernetesManifest@0
+              displayName: 'Run SOLR Initialization'
+              inputs:
+                kubernetesServiceConnection: '$(kubernetesServiceConnection)'
+                manifests: '$(Pipeline.Workspace)/Kubernetes/$(topology)/init/solr-init.yaml'
+
+            - task: KubernetesManifest@0
+              displayName: 'Run MSSQL Initialization'
+              inputs:
+                kubernetesServiceConnection: '$(kubernetesServiceConnection)'
+                manifests: '$(Pipeline.Workspace)/Kubernetes/$(topology)/init/mssql-init.yaml'
+
+            - task: Kubernetes@1
+              displayName: 'Wait for SOLR Initialization to finish'            
+              inputs:
+                connectionType: 'Kubernetes Service Connection'
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                command: 'wait'
+                arguments: '--for=condition=Complete job.batch/solr-init --timeout=600s'
+                outputFormat: none
+
+            - task: Kubernetes@1
+              displayName: 'Wait for MSSQL Initialization to finish'
+              inputs:
+                connectionType: 'Kubernetes Service Connection'
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                command: 'wait'
+                arguments: '--for=condition=Complete job.batch/mssql-init --timeout=600s'                         
+                outputFormat: none
+
+    - deployment: SitecorePods
+      dependsOn: InitJobs
+      displayName: Deploy Sitecore Pods
+      pool:
+        vmImage: windows-latest
+      environment: $(deploymentId)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: Kubernetes
+
+            - task: KubernetesManifest@0
+              displayName: 'Deploy Sitecore Pods'
+              inputs:
+                kubernetesServiceConnection: '$(kubernetesServiceConnection)'
+                manifests: '$(Pipeline.Workspace)/Kubernetes/$(topology)/*.yaml'
+
+            - task: KubernetesManifest@0
+              displayName: 'Deploy Ingress'
+              inputs:
+                kubernetesServiceConnection: '$(kubernetesServiceConnection)'
+                manifests: '$(Pipeline.Workspace)/Kubernetes/$(topology)/ingress-nginx/ingress.yaml'
+
+            - task: Kubernetes@1
+              displayName: 'Wait for all jobs to finish'
+              inputs:
+                connectionType: 'Kubernetes Service Connection'
+                kubernetesServiceEndpoint: '$(kubernetesServiceConnection)'
+                command: 'wait'
+                arguments: '--for=condition=Available deployments --all --timeout=1800s'
+                outputFormat: none
