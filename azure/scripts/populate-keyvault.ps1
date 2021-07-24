@@ -92,8 +92,8 @@ Function Read-File {
 	}	
 }
 
-# generates a random alphanumeric string of the given length
-Function Get-RandomAlphanumericString {
+# generates a random alphanumeric string of the given length including two special characters
+Function Get-RandomString {
 	
 	[CmdletBinding()]
 	Param (
@@ -104,7 +104,10 @@ Function Get-RandomAlphanumericString {
 	}
 
 	Process {
-        Write-Output ( -join ((0x30..0x39) + ( 0x41..0x5A) + ( 0x61..0x7A) | Get-Random -Count $length  | % {[char]$_}) )
+        $alphanumeric = -join ((0x30..0x39) + (0x41..0x5A) + (0x61..0x7A) | Get-Random -Count ($length - 2) | % {[char]$_})
+        $specialchars = -join ((0x21..0x2F) | Get-Random -Count 2 | % {[char]$_})
+
+        Write-Output ($alphanumeric + $specialchars)
 	}	
 }
 
@@ -138,7 +141,7 @@ Function Construct-KeyVaultReference {
         }
 
         # generate random secret value
-        $value = Get-RandomAlphanumericString -length $secretLength
+        $value = Get-RandomString -length $secretLength
 
         # non-empty original value overrides random value
         # this is specifically relevant for (default) usernames, connection strings, certificates and the license file
@@ -191,7 +194,7 @@ Function Add-SolrCredentials {
         Write-Host 'Add Solr credential secrets to key vault...'
 
         # generate random secret value
-        $solrAdminPassword = Get-RandomAlphanumericString -length $DefaultSecretLength
+        $solrAdminPassword = Get-RandomString -length $DefaultSecretLength
 
         # generate key vault secret
         az keyvault secret set --name 'sitecore-solr-admin-username' --vault-name $VaultName --value 'solrAdmin'
