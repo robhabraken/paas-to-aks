@@ -104,8 +104,8 @@ Function Get-RandomString {
 	}
 
 	Process {
-        $alphanumeric = -join ((0x30..0x39) + (0x41..0x5A) + (0x61..0x7A) | Get-Random -Count ($length - 2) | % {[char]$_})
-        $specialchars = -join ((0x21..0x2F) | Get-Random -Count 2 | % {[char]$_})
+        $alphanumeric = -join ((0x30..0x39) + (0x41..0x5A) + (0x61..0x7A) | Get-Random -Count ($length - 1) | % {[char]$_})
+        $specialchars = -join ((0x3F..0x40) | Get-Random -Count 1 | % {[char]$_})
 
         Write-Output ($alphanumeric + $specialchars)
 	}	
