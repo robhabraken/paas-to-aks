@@ -167,7 +167,7 @@ Function Construct-KeyVaultReference {
         az keyvault secret set --name $secretName --vault-name $VaultName --value $value
 
         # store reference key in secret file
-        Set-Content -Path $fullPath -Value $reference
+        Set-Content -NoNewLine -Path $fullPath -Value $reference
 
         # verbose output
         Write-Host 'Filename    : '$filename
