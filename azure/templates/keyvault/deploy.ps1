@@ -80,12 +80,12 @@ if (!$getKeyVault) {
 
         Write-Host "Start KeyVault creation"
 
-        if(!$ArmParametersPath){
+        if(!$templateParameterFile){
             New-AzResourceGroupDeployment   -verbose `
             -Name "KeyVault" `
             -deploymentId $deploymentId `
             -ResourceGroupName $resourceGroupName `
-            -TemplateFile $ArmTemplatePath `
+            -TemplateFile $templateFile `
             -managedIdentityPrincipalId $managedIdentityPrincipalId
         } else {
 
@@ -93,8 +93,8 @@ if (!$getKeyVault) {
             -Name "KeyVault" `
             -deploymentId $deploymentId `
             -ResourceGroupName $resourceGroupName `
-            -TemplateFile $ArmTemplatePath `
-            -TemplateParameterFile $ArmParametersPath `
+            -TemplateFile $templateFile `
+            -TemplateParameterFile $templateParameterFile `
             -managedIdentityPrincipalId $managedIdentityPrincipalId
         }
 
